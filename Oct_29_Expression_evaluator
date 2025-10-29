@@ -1,0 +1,49 @@
+def evalaute_expression(expr):
+    expr=expr.replace(' ', '')
+    def parse_expression(index):
+        values = []
+        operators = []
+        def apply_operator():
+            right = values.pop()
+            left = values.pop()
+            op = operators.pop()
+            if op == '+':
+                values.append(left + right)
+            elif op == '-':
+                values.append(left - right)
+            elif op == '*':
+                values.append(left * right)
+            elif op == '/':
+                values.append(left / right)
+        def precedence(op):
+            if op in ('+', '-'):
+                return 1
+            if op in ('*', '/'):
+                return 2
+            return 0
+        while index < len(expr):
+            char = expr[index]
+            if char.isdigit():
+                num = 0
+                while index < len(expr) and expr[index].isdigit():
+                    num = num * 10 + int(expr[index])
+                    index += 1
+                values.append(num)
+                continue
+            elif char == '(':
+                index, value = parse_expression(index + 1)
+                values.append(value)
+            elif char == ')':
+                break
+            elif char in '+-*/':
+                while (operators and precedence(operators[-1]) >= precedence(char)):
+                    apply_operator()
+                operators.append(char)
+            index += 1
+        while operators:
+            apply_operator()
+        return index, values[0]
+    _, result = parse_expression(0)
+    return result
+expression = "5 + 2 * (3 - 1)"
+print(evalaute_expression(expression)) 
