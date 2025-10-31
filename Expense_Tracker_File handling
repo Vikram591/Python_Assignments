@@ -1,0 +1,88 @@
+def read_expenses(filename):
+    records = []
+    try:
+        with open(filename, "r") as file:
+            for line in file:
+                line = line.strip()
+                if not line or line.startswith("Date"):
+                    continue
+                parts = line.split(",")
+                if len(parts) != 3:
+                    print(f" Skipping malformed line: {line}")
+                    continue
+                date, category, amount = parts
+                try:
+                    amount = float(amount)
+                except ValueError:
+                    print(f" Invalid amount in line: {line}")
+                    continue
+                records.append((date, category, amount))
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+        return []
+    return records
+
+
+def calculate_summary(records, filter_category=None):
+    total = 0
+    category_totals = {}
+    daily_totals = {}
+
+    for date, category, amount in records:
+        if filter_category and category.lower() != filter_category.lower():
+            continue
+        total += amount
+        category_totals[category] = category_totals.get(category, 0) + amount
+        daily_totals[date] = daily_totals.get(date, 0) + amount
+
+    highest_day = max(daily_totals, key=daily_totals.get) if daily_totals else None
+    highest_amount = daily_totals[highest_day] if highest_day else 0
+
+    return total, category_totals, highest_day, highest_amount
+def write_summary(total, category_totals, highest_day, highest_amount, filename, month_year):
+    try:
+        with open(filename, "a", encoding="utf-8") as file:
+            file.write(f" Expense Summary ({month_year}) \n")
+            file.write(f"Total Monthly Expense: Rs {int(total)}\n\n")
+            file.write("Category-wise Breakdown:\n")
+            for category, amount in category_totals.items():
+                file.write(f"{category:<15}: Rs {int(amount)}\n")
+            if highest_day:
+                file.write(f"\nHighest Spending Day: {highest_day} (Rs {int(highest_amount)})\n")
+            file.write("\n")
+        print(f" Summary saved to '{filename}' successfully!")
+    except Exception as e:
+        print(f" Error writing to file: {e}")
+
+def main():
+    import datetime
+
+    input_file = input("Enter input file name:").strip()
+    output_file = input("Enter output file name: ").strip()
+    category_filter = input("Enter category to filter:").strip()
+
+    records = read_expenses(input_file)
+    if not records:
+        print("No valid expense records found.")
+        return
+
+    first_date = records[0][0]
+    try:
+        date_obj = datetime.datetime.strptime(first_date[:7], "%Y-%m")
+        month_year = date_obj.strftime("%B %Y")
+    except ValueError:
+        month_year = first_date[:7]
+
+    total, categories, high_day, high_amount = calculate_summary(records, category_filter or None)
+    if total == 0:
+        print("No expenses found for the selected filter.")
+        return
+    write_summary(total, categories, high_day, high_amount, output_file, month_year)
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
